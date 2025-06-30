@@ -1,4 +1,3 @@
-// App.jsx
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -10,6 +9,10 @@ import AddPet from "./pages/AddPet";
 import VaccinationForm from "./pages/VaccinationForm";
 import VaccinationCalendar from "./pages/VaccinationCalendar";
 import ServicesMenu from "./pages/ServicesMenu";
+
+// 👉 Import legal pages
+import { TermsPage } from "./pages/TermsPage";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -41,6 +44,11 @@ function App() {
         <Route path="/vaccination-form" element={user ? <VaccinationForm user={user} /> : <Navigate to="/login" />} />
         <Route path="/calendar" element={user ? <VaccinationCalendar user={user} /> : <Navigate to="/login" />} />
         <Route path="/services" element={user ? <ServicesMenu user={user} /> : <Navigate to="/login" />} />
+
+        {/* ✅ Legal Pages - Publicly Accessible */}
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

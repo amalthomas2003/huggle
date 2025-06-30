@@ -11,8 +11,12 @@ import {
   UtensilsCrossed,
   CalendarDays,
   ShoppingBag,
-  Dog
+  Dog,
+  Menu,
+  CalendarClock,
+  Share2
 } from "lucide-react";
+
 import Lottie from "lottie-react";
 import pawAnimation from "../assets/lottie/paw.json";
 import "slick-carousel/slick/slick.css";
@@ -24,6 +28,8 @@ function CustomerDashboard({ user, setUser }) {
   const navigate = useNavigate();
   const [showServices, setShowServices] = useState(false);
   const [showCare, setShowCare] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showSocial, setShowSocial] = useState(false);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -33,13 +39,11 @@ function CustomerDashboard({ user, setUser }) {
   const username = user?.displayName?.split(" ")[0] || "User";
   const userPhoto = user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=fff3e0&color=ff6f00`;
 
-
   const adImages = [
-  "https://img.freepik.com/free-vector/hand-drawn-pet-shop-facebook-cover-template_23-2150383109.jpg", // peeking pets banner :contentReference[oaicite:3]{index=3}
-  "https://img.pikbest.com/origin/06/17/98/79YpIkbEsTNbH.jpg!bw700", // puppy in grass :contentReference[oaicite:4]{index=4}
-  "https://i.pinimg.com/736x/22/24/70/222470d2199ab493f637ce5e6e315095.jpg" // cute pet banner :contentReference[oaicite:5]{index=5}
-];
-
+    "https://img.freepik.com/free-vector/hand-drawn-pet-shop-facebook-cover-template_23-2150383109.jpg",
+    "https://img.pikbest.com/origin/06/17/98/79YpIkbEsTNbH.jpg!bw700",
+    "https://i.pinimg.com/736x/22/24/70/222470d2199ab493f637ce5e6e315095.jpg"
+  ];
 
   const sliderSettings = {
     dots: true,
@@ -59,29 +63,31 @@ function CustomerDashboard({ user, setUser }) {
         huggle 🐾
       </div>
 
-      {/* Top Greeting & Logout */}
-      <div className="flex items-center justify-between px-4 py-4 sm:py-3 lg:py-2 xl:py-1 bg-white shadow-sm">
+      {/* Top Greeting & Menu */}
+      <div className="flex items-center justify-between px-4 py-4 sm:py-3 lg:py-2 xl:py-1 bg-white shadow-sm relative">
         <div className="flex items-center gap-3">
           <img src={userPhoto} alt="User" className="w-10 h-10 rounded-full border" />
-          <h2 className="text-lg font-bold text-gray-800">Hi {username}</h2>
+          <h2 className="text-lg font-bold text-gray-800">Hi, {username}</h2>
         </div>
-        <button onClick={handleLogout} className="hover:text-red-600 transition">
-          <LogOut />
+        <button onClick={() => setMenuOpen(!menuOpen)} className="hover:text-orange-600 transition">
+          <Menu />
         </button>
+
+        {menuOpen && (
+          <div className="absolute top-16 right-4 bg-white border border-orange-300 rounded-lg shadow-xl z-50 w-40">
+            <button onClick={handleLogout} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Log Out</button>
+            <button onClick={() => navigate("/contact")} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Contact Us</button>
+          </div>
+        )}
       </div>
 
       {/* Advertisement Carousel */}
       <div className="px-4 py-2">
         <Slider {...sliderSettings}>
           {adImages.map((src, index) => (
-           <div className="rounded-xl overflow-hidden shadow-xl aspect-[16/9] w-full max-h-60">
-  <img
-    src={src}
-    alt={`Ad ${index}`}
-    className="w-full h-full object-cover"
-  />
-</div>
-
+            <div className="rounded-xl overflow-hidden shadow-xl aspect-[16/9] w-full max-h-60" key={index}>
+              <img src={src} alt={`Ad ${index}`} className="w-full h-full object-cover" />
+            </div>
           ))}
         </Slider>
       </div>
@@ -113,6 +119,14 @@ function CustomerDashboard({ user, setUser }) {
         </SubMenu>
       )}
 
+      {showSocial && (
+        <SubMenu>
+          <ServiceCard label="Pet Parents Nearby" icon={<Users />} onClick={() => navigate("/services?type=nearby")} />
+          <ServiceCard label="Events" icon={<CalendarClock />} onClick={() => navigate("/services?type=events")} />
+          <ServiceCard label="Social Media" icon={<Share2 />} onClick={() => navigate("/services?type=social")} />
+        </SubMenu>
+      )}
+
       {/* Bottom Nav */}
       <div className="flex justify-around items-center py-5 sm:py-4 lg:py-3 bg-white shadow-inner border-t border-gray-200 text-xs font-semibold">
         <BottomNavItem label="My Pets" icon={<PawPrint />} onClick={() => navigate("/add-pet")} />
@@ -120,11 +134,17 @@ function CustomerDashboard({ user, setUser }) {
         <BottomNavItem label="Pet Care" icon={<Dog />} onClick={() => {
           setShowCare(!showCare);
           setShowServices(false);
+          setShowSocial(false);
         }} />
-        <BottomNavItem label="Socials" icon={<Users />} onClick={() => navigate("/services?type=social")} />
+        <BottomNavItem label="Socials" icon={<Users />} onClick={() => {
+          setShowSocial(!showSocial);
+          setShowCare(false);
+          setShowServices(false);
+        }} />
         <BottomNavItem label="Services" icon={<Sparkles />} onClick={() => {
           setShowServices(!showServices);
           setShowCare(false);
+          setShowSocial(false);
         }} />
       </div>
     </div>

@@ -20,7 +20,6 @@ import { auth } from "../firebase";
 import cartoonBg from "../assets/cartoon-bg.jpg";
 import Lottie from "lottie-react";
 import petAnimation from "../assets/lottie/pet-id-card.json";
-import { useNavigate } from "react-router-dom";
 
 const defaultImages = {
   Dog: "/default-dog.jpg",
@@ -73,8 +72,6 @@ const meds = {
 
 export default function AddPet() {
   const [user] = useAuthState(auth);
-  const navigate = useNavigate(); // ← ✅ Add this line here
-
   const [pets, setPets] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [formVisible, setFormVisible] = useState(false);
@@ -158,11 +155,7 @@ export default function AddPet() {
     if (editingId) {
       await updateDoc(doc(db, "users", user.uid, "pets", editingId), dataToSave);
     } else {
-      const docRef = await addDoc(collection(db, "users", user.uid, "pets"), dataToSave);
-
-    // Optionally update the newly created document to include the ID field
-      await updateDoc(docRef, { id: docRef.id });
-
+      await addDoc(collection(db, "users", user.uid, "pets"), dataToSave);
     }
 
     setPetData({
@@ -196,35 +189,14 @@ export default function AddPet() {
   return (
     <div className="max-w-xl mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-<h1 className="text-3xl font-extrabold text-orange-600 tracking-wide drop-shadow-lg">
-  My Pets
-</h1>
-
-        <div className="relative inline-block">
-  <div className="absolute inset-0 rounded-full animate-siri-glow pointer-events-none z-[-1]" />
-  <div className="flex justify-between items-center mb-4">
-  <div className="flex items-center gap-2">
-    <button
-      onClick={() => setFormVisible(!formVisible)}
-      className="relative overflow-hidden px-5 py-2 rounded-full text-white font-bold bg-orange-500 hover:bg-orange-600 transition-all"
-    >
-      <span className="relative z-10 flex items-center gap-1">
-        <Plus size={20} />  Pet
-      </span>
-    </button>
-    <button
-      onClick={() => navigate("/dashboard")}
-      className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-full shadow flex items-center gap-1"
-    >
-      <Home size={18} /> Home
-    </button>
-  </div>
-</div>
-
-</div>
-
+        <h1 className="text-2xl font-bold text-orange-700">🐾 My Pets</h1>
+        <button
+          onClick={() => setFormVisible(!formVisible)}
+          className="animate-pulse bg-gradient-to-r from-orange-400 to-pink-500 hover:scale-105 transition-transform px-4 py-2 rounded-full text-white font-bold shadow-lg flex items-center gap-2"
+        >
+          <Plus size={18} /> Add Pet
+        </button>
       </div>
-      <div className="space-y-3">
 
       {pets.map(pet => (
         <div
@@ -242,8 +214,6 @@ export default function AddPet() {
           </div>
         </div>
       ))}
-      </div>
-
 
       {selectedPetId && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center">
@@ -261,8 +231,6 @@ export default function AddPet() {
                   <h2 className="text-center text-xl font-bold text-gray-800">{pet.name}</h2>
                   <p className="text-center text-sm text-gray-500">{pet.type} • {pet.breed}</p>
                   <p className="text-center text-sm text-gray-400">DOB: {pet.dob}</p>
-                  <p className="text-center text-xs text-gray-500">Pet ID: {pet.id}</p>
-
                   <div className="mt-3">
                     <h4 className="text-sm font-semibold mb-1">Vaccinations:</h4>
                     <div className="flex flex-wrap gap-2">
@@ -279,11 +247,7 @@ export default function AddPet() {
                   <div className="flex gap-2 mt-4">
                     <button
                       onClick={() => {
-                      setPetData({
-                        ...pet,
-                        image: null, // clear actual URL
-                        vaccines: pet.vaccines.map(v => typeof v === "string" ? v : v.name), // ✅ Extract names only
-                      });
+                        setPetData({ ...pet, image: null });
                         setImagePreview(pet.image);
                         setFormVisible(true);
                         setEditingId(pet.id);
@@ -318,26 +282,8 @@ export default function AddPet() {
               style={{ backgroundImage: `url(${cartoonBg})` }}
               onClick={() => fileInputRef.current.click()}
             >
-              {imagePreview ? (
-  <div className="relative w-full h-full">
-    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-full" />
-    <button
-      type="button"
-      className="absolute -top-1 -right-1 bg-white text-red-600 rounded-full shadow p-1"
-      onClick={() => {
-        setImagePreview(null);
-        setPetData(prev => ({ ...prev, image: null }));
-        fileInputRef.current.value = "";
-      }}
-      title="Remove Image"
-    >
-      ✕
-    </button>
-  </div>
-) : (
-  <Camera className="text-gray-400 w-6 h-6 absolute top-9 left-9" />
-)}
-
+              {imagePreview && <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-full" />}
+              {!imagePreview && <Camera className="text-gray-400 w-6 h-6 absolute top-9 left-9" />}
             </div>
             <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleImageChange} />
             <p className="text-sm text-gray-500 mt-1">Tap to upload pet image</p>
