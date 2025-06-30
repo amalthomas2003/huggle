@@ -10,7 +10,6 @@ import VaccinationForm from "./pages/VaccinationForm";
 import VaccinationCalendar from "./pages/VaccinationCalendar";
 import ServicesMenu from "./pages/ServicesMenu";
 
-// 👉 Import legal pages
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
 
