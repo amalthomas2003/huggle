@@ -95,11 +95,29 @@ export default function AddPet() {
   });
 
   const fetchPets = async () => {
-    if (!user) return;
+  if (!user) return;
+
+  // Session cache check
+  const cached = sessionStorage.getItem(`pets-${user.uid}`);
+  if (cached) {
+    try {
+      setPets(JSON.parse(cached));
+    } catch (err) {
+      console.error("Failed to parse cached data:", err);
+    }
+  }
+
+  // Always fetch fresh data in background
+  try {
     const snapshot = await getDocs(collection(db, "users", user.uid, "pets"));
     const petsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setPets(petsData);
-  };
+    sessionStorage.setItem(`pets-${user.uid}`, JSON.stringify(petsData));
+  } catch (err) {
+    console.error("Failed to fetch from Firestore:", err);
+  }
+};
+
 
   useEffect(() => {
     fetchPets();
@@ -137,51 +155,63 @@ export default function AddPet() {
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
-    let imageUrl = defaultImages[petData.type];
+  e.preventDefault();
+  let imageUrl = defaultImages[petData.type];
 
-    if (petData.image) {
-      imageUrl = await uploadImage(petData.image, petData.name);
-    }
+  if (petData.image) {
+    imageUrl = await uploadImage(petData.image, petData.name);
+  }
 
-    const enrichedVaccines = petData.vaccines.map(v => {
-      const vInfo = vaccineCatalog[petData.type].find(obj => obj.name === v);
-      return { name: v, priority: vInfo?.priority || "Unknown", recurring: vInfo?.recurring || false };
-    });
-
-    const dataToSave = {
-      ...petData,
-      image: imageUrl,
-      vaccines: enrichedVaccines
+  const enrichedVaccines = petData.vaccines.map(v => {
+    const vInfo = vaccineCatalog[petData.type].find(obj => obj.name === v);
+    return {
+      name: v,
+      priority: vInfo?.priority || "Unknown",
+      recurring: vInfo?.recurring || false
     };
+  });
 
-    if (editingId) {
-      await updateDoc(doc(db, "users", user.uid, "pets", editingId), dataToSave);
-    } else {
-      const docRef = await addDoc(collection(db, "users", user.uid, "pets"), dataToSave);
-
-    // Optionally update the newly created document to include the ID field
-      await updateDoc(docRef, { id: docRef.id });
-
-    }
-
-    setPetData({
-      name: "",
-      dob: "",
-      sex: "Male",
-      type: "Dog",
-      breed: "",
-      allergies: "",
-      image: null,
-      vaccines: [],
-      meds: []
-    });
-    fileInputRef.current.value = "";
-    setImagePreview(null);
-    setFormVisible(false);
-    setEditingId(null);
-    fetchPets();
+  const dataToSave = {
+    ...petData,
+    image: imageUrl,
+    vaccines: enrichedVaccines
   };
+
+  if (editingId) {
+    await updateDoc(doc(db, "users", user.uid, "pets", editingId), dataToSave);
+  } else {
+    const docRef = await addDoc(collection(db, "users", user.uid, "pets"), dataToSave);
+    await updateDoc(docRef, { id: docRef.id }); // optional: store ID in Firestore
+  }
+
+  // ✅ Update session cache
+  const updatedPets = editingId
+    ? pets.map(p => p.id === editingId ? { ...dataToSave, id: editingId } : p)
+    : [...pets, { ...dataToSave, id: "temp" }]; // optional: replace "temp" with docRef.id if needed
+
+  sessionStorage.setItem(`pets-${user.uid}`, JSON.stringify(updatedPets));
+
+  // Reset form
+  setPetData({
+    name: "",
+    dob: "",
+    sex: "Male",
+    type: "Dog",
+    breed: "",
+    allergies: "",
+    image: null,
+    vaccines: [],
+    meds: []
+  });
+  fileInputRef.current.value = "";
+  setImagePreview(null);
+  setFormVisible(false);
+  setEditingId(null);
+
+  // Fetch fresh from Firestore to stay in sync
+  fetchPets();
+};
+
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -194,7 +224,8 @@ export default function AddPet() {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-4">
+  <div className="min-h-screen bg-[#ffe5b4] p-4">
+    <div className="max-w-xl mx-auto">
       <div className="flex justify-between items-center mb-4">
 <h1 className="text-3xl font-extrabold text-orange-600 tracking-wide drop-shadow-lg">
   My Pets
@@ -224,25 +255,36 @@ export default function AddPet() {
 </div>
 
       </div>
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  {pets.map(pet => (
+    <div
+      key={pet.id}
+      className="relative w-full h-[340px] sm:h-auto sm:aspect-[4/5] rounded-xl shadow-md border overflow-hidden cursor-pointer transition-transform hover:scale-[1.01]"
+      onClick={() => setSelectedPetId(pet.id)}
+    >
+      {/* Background Image */}
+      <img
+        src={cartoonBg}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      />
 
-      {pets.map(pet => (
-        <div
-          key={pet.id}
-          className="p-3 bg-white rounded-xl shadow border cursor-pointer hover:scale-[1.02] transition-transform"
-          onClick={() => setSelectedPetId(pet.id)}
-        >
-          <div className="flex items-center gap-3">
-            <img src={pet.image} className="w-14 h-14 rounded-full object-cover" />
-            <div>
-              <p className="font-semibold text-gray-800">{pet.name}</p>
-              <p className="text-xs text-gray-500">{pet.breed}</p>
-              <p className="text-xs text-gray-400">{pet.vaccines?.length} vaccines</p>
-            </div>
-          </div>
-        </div>
-      ))}
+      {/* Blurred Overlay with Large Content */}
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-4 backdrop-blur-md bg-white/50">
+        <img
+          src={pet.image}
+          alt="Pet"
+          className="w-32 h-32 sm:w-36 sm:h-36 object-cover rounded-full border-4 border-white shadow mb-3"
+        />
+        <p className="font-extrabold text-gray-800 text-2xl sm:text-3xl mb-1">{pet.name}</p>
+        <p className="text-lg sm:text-xl text-gray-700 font-medium">{pet.breed}</p>
+        <p className="text-base sm:text-lg text-gray-600">{pet.vaccines?.length} vaccines</p>
       </div>
+    </div>
+  ))}
+</div>
+
+
 
 
       {selectedPetId && (
@@ -294,7 +336,11 @@ export default function AddPet() {
                     <button
                       onClick={async () => {
                         await deleteDoc(doc(db, "users", user.uid, "pets", pet.id));
-                        fetchPets();
+const remainingPets = pets.filter(p => p.id !== pet.id);
+sessionStorage.setItem(`pets-${user.uid}`, JSON.stringify(remainingPets));
+setPets(remainingPets); // Update state immediately
+setSelectedPetId(null);
+
                         setSelectedPetId(null);
                       }}
                       className="w-full bg-red-500 text-white py-2 rounded"
@@ -456,5 +502,7 @@ export default function AddPet() {
       )} {/* End of formVisible block */}
 
     </div>
+  </div>
+
   ); // End of return
 } // End of AddPet component
