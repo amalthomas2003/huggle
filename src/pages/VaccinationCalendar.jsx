@@ -62,8 +62,17 @@ const VaccinationCalendar = () => {
   const [vaccinationData, setVaccinationData] = useState([]);
   const [calendarValue, setCalendarValue] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const cachedPets = sessionStorage.getItem("cachedPets");
+    if (cachedPets) {
+      const parsed = JSON.parse(cachedPets);
+      setPets(parsed);
+      if (parsed.length > 0) setSelectedPetId(parsed[0].id);
+      setLoading(false);
+    }
+
     const fetchPets = async () => {
       const user = auth.currentUser;
       if (!user) return;
@@ -76,9 +85,11 @@ const VaccinationCalendar = () => {
       }));
 
       setPets(petList);
+      sessionStorage.setItem("cachedPets", JSON.stringify(petList));
       if (petList.length > 0) {
         setSelectedPetId(petList[0].id);
       }
+      setLoading(false);
     };
 
     fetchPets();
@@ -169,7 +180,9 @@ const VaccinationCalendar = () => {
         </div>
       </div>
 
-      {pets.length > 0 ? (
+      {loading ? (
+        <p className="text-gray-500 mt-4">Loading pets...</p>
+      ) : pets.length > 0 ? (
         <>
           <div className="overflow-x-auto scrollbar-hide -mx-2 px-2">
             <Tabs value={selectedPetId} onValueChange={setSelectedPetId} className="whitespace-nowrap">
