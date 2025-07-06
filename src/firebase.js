@@ -11,7 +11,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDyTc5UHH7yH3e-FSLOJGtACc1zAE5MphI",
   authDomain: "pet-care-app-7f23d.firebaseapp.com",
   projectId: "pet-care-app-7f23d",
-  storageBucket: "pet-care-app-7f23d.appspot.com", // ✅ Corrected domain
+  storageBucket: "pet-care-app-7f23d.firebasestorage.app", // ✅ Corrected domain
   messagingSenderId: "478960090418",
   appId: "1:478960090418:web:9e0ab227c7839b026bab2b",
   measurementId: "G-44KD9FFBDX"

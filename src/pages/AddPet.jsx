@@ -14,13 +14,34 @@ import {
 } from "lucide-react";
 import { db, storage } from "../firebase";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+const deleteImageFromStorage = async (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== "string") return;
+
+  try {
+    const match = imageUrl.match(/\/o\/(.*?)\?/);
+    if (!match || !match[1]) throw new Error("Invalid image URL");
+
+    const path = decodeURIComponent(match[1]);
+    const imageRef = ref(storage, path);
+    await deleteObject(imageRef);
+    console.log("✅ Deleted image from Firebase Storage");
+  } catch (err) {
+    console.error("❌ Failed to delete image from Storage:", err);
+  }
+};
+
+
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../firebase";
 import cartoonBg from "../assets/cartoon-bg.jpg";
 import Lottie from "lottie-react";
 import petAnimation from "../assets/lottie/pet-id-card.json";
 import { useNavigate } from "react-router-dom";
+import imageCompression from 'browser-image-compression';
+import loadingLottie from "../assets/lottie/loadingcat.json";
+
 
 const defaultImages = {
   Dog: "/default-dog.jpg",
@@ -72,6 +93,8 @@ const meds = {
 };
 
 export default function AddPet() {
+  const formRef = useRef(null);
+
   const [user] = useAuthState(auth);
   const navigate = useNavigate(); // ← ✅ Add this line here
 
@@ -80,6 +103,8 @@ export default function AddPet() {
   const [formVisible, setFormVisible] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   const fileInputRef = useRef();
 
   const [petData, setPetData] = useState({
@@ -122,6 +147,12 @@ export default function AddPet() {
   useEffect(() => {
     fetchPets();
   }, [user]);
+  useEffect(() => {
+  if (formVisible && formRef.current) {
+    formRef.current.scrollIntoView({ behavior: "smooth" });
+  }
+}, [formVisible]);
+
 
   const handleChange = e => {
     setPetData({ ...petData, [e.target.name]: e.target.value });
@@ -149,17 +180,56 @@ export default function AddPet() {
   };
 
   const uploadImage = async (file, petName) => {
+  try {
+    // Compression options
+    const options = {
+      maxSizeMB: 0.1, // Max size in MB
+      maxWidthOrHeight: 400, // Resize if either dimension is above this
+      useWebWorker: true,
+    };
+
+    // Compress the image
+    const compressedFile = await imageCompression(file, options);
+
+    // Upload to Firebase Storage
     const fileRef = ref(storage, `pets/${user.uid}/${petName}-${Date.now()}`);
-    await uploadBytes(fileRef, file);
-    return await getDownloadURL(fileRef);
-  };
+    const snapshot = await uploadBytes(fileRef, compressedFile);
+    const url = await getDownloadURL(snapshot.ref);
+    return url;
+  } catch (error) {
+    console.error("Image compression/upload failed:", error);
+    throw error;
+  }
+};
+
 
   const handleSubmit = async e => {
   e.preventDefault();
+  setLoading(true);
   let imageUrl = defaultImages[petData.type];
+let oldImageUrl = null;
+
+if (editingId) {
+  const petToEdit = pets.find(p => p.id === editingId);
+  oldImageUrl = petToEdit?.image;
+}
+
 
   if (petData.image) {
     imageUrl = await uploadImage(petData.image, petData.name);
+    // 🧹 Delete old image if it exists and a new image was uploaded
+if (oldImageUrl && oldImageUrl.startsWith("https://firebasestorage.googleapis.com")) {
+  try {
+    const url = new URL(oldImageUrl);
+    const path = decodeURIComponent(url.pathname.split("/o/")[1].split("?")[0]);
+    const oldRef = ref(storage, path);
+    await deleteObject(oldRef);
+    console.log("Old image deleted from Firebase Storage.");
+  } catch (err) {
+    console.warn("Failed to delete previous image:", err);
+  }
+}
+
   }
 
   const enrichedVaccines = petData.vaccines.map(v => {
@@ -210,6 +280,8 @@ export default function AddPet() {
 
   // Fetch fresh from Firestore to stay in sync
   fetchPets();
+  setLoading(false);
+
 };
 
 
@@ -226,6 +298,13 @@ export default function AddPet() {
   return (
   <div className="min-h-screen bg-[#ffe5b4] p-4">
     <div className="max-w-xl mx-auto">
+      {loading && (
+  <div className="fixed inset-0 bg-white bg-opacity-70 z-50 flex items-center justify-center">
+    <Lottie animationData={loadingLottie} loop autoplay className="w-28 h-28" />
+  </div>
+)}
+
+
       <div className="flex justify-between items-center mb-4">
 <h1 className="text-3xl font-extrabold text-orange-600 tracking-wide drop-shadow-lg">
   My Pets
@@ -270,7 +349,7 @@ export default function AddPet() {
       />
 
       {/* Blurred Overlay with Large Content */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-4 backdrop-blur-md bg-white/50">
+<div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-4 backdrop-blur-sm bg-white/20">
         <img
           src={pet.image}
           alt="Pet"
@@ -335,11 +414,28 @@ export default function AddPet() {
                     >Edit</button>
                     <button
                       onClick={async () => {
-                        await deleteDoc(doc(db, "users", user.uid, "pets", pet.id));
-const remainingPets = pets.filter(p => p.id !== pet.id);
-sessionStorage.setItem(`pets-${user.uid}`, JSON.stringify(remainingPets));
-setPets(remainingPets); // Update state immediately
-setSelectedPetId(null);
+  try {
+    const petToDelete = pets.find(p => p.id === pet.id);
+
+    // 1. Delete image if custom
+    if (petToDelete?.image && !petToDelete.image.includes("default")) {
+      await deleteImageFromStorage(petToDelete.image);
+    }
+
+    // 2. Delete document
+    await deleteDoc(doc(db, "users", user.uid, "pets", pet.id));
+
+    // 3. Update UI and session
+    const remainingPets = pets.filter(p => p.id !== pet.id);
+    sessionStorage.setItem(`pets-${user.uid}`, JSON.stringify(remainingPets));
+    setPets(remainingPets);
+    setSelectedPetId(null);
+  } catch (err) {
+    console.error("Failed to delete pet and image:", err);
+  }
+
+
+
 
                         setSelectedPetId(null);
                       }}
@@ -355,9 +451,11 @@ setSelectedPetId(null);
 
       {formVisible && (
         <form
-          onSubmit={handleSubmit}
-          className="mt-4 bg-white border p-4 rounded-xl shadow space-y-4"
-        >
+  ref={formRef}
+  onSubmit={handleSubmit}
+  className="mt-4 bg-white border p-4 rounded-xl shadow space-y-4"
+>
+
           <div className="text-center">
             <div
               className="w-24 h-24 mx-auto rounded-full border-4 border-dashed bg-cover bg-center relative cursor-pointer"

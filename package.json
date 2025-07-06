@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+    "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
     "firebase": "^11.9.1",
     "framer-motion": "^12.20.1",

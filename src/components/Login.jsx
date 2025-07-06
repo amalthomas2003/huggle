@@ -164,14 +164,11 @@ function Login({ setUser }) {
           <div className="mt-2 w-56 bg-white text-black rounded-lg shadow-xl absolute right-0 top-10 z-30 text-sm">
             <div className="px-4 py-2 font-semibold text-gray-700 border-b">Select Role</div>
             {[
-              { key: "customer", label: "Pet Owner (Customer)" },
-              { key: "groomer", label: "Groomer" },
-              { key: "vet", label: "Veterinary Doctor" },
-              { key: "trainer", label: "Dog Trainer" },
-              { key: "careCentre", label: "Pet Care Centre" },
-              { key: "eventHost", label: "Event Organizer" },
-              { key: "admin", label: "Admin" },
-            ].map(({ key, label }) => (
+  { key: "customer", label: "Pet Owner Login" },
+  { key: "eventHost", label: "Advertise Your Product/Service" },
+  { key: "admin", label: "Admin" },
+].map(({ key, label }) => (
+
               <button
                 key={key}
                 onClick={() => {
