@@ -300,30 +300,30 @@ function CustomerDashboard({ user, setUser }) {
       {/* Services Popup */}
       {showServices && (
         <SubMenu>
-          <ServiceCard label="Find Vets" icon={<HeartPulse />} onClick={() => navigate("/services?type=vet")} />
-          <ServiceCard label="Groomers" icon={<Scissors />} onClick={() => navigate("/services?type=groomer")} />
+          <ServiceCard label="Find Vets" icon={<HeartPulse />} onClick={() => navigate("/find-vet")} />
+          <ServiceCard label="Groomers" icon={<Scissors />} onClick={() => navigate("/find-groomer")} />
         </SubMenu>
       )}
 
       {showCare && (
         <SubMenu>
           <ServiceCard label="Vaccination" icon={<CalendarDays />} onClick={() => navigate("/calendar")} />
-          <ServiceCard label="Diet Plan" icon={<UtensilsCrossed />} onClick={() => navigate("/services?type=diet")} />
+          <ServiceCard label="Diet Plan" icon={<UtensilsCrossed />} onClick={() => navigate("/diet-plan")} />
         </SubMenu>
       )}
 
       {showSocial && (
         <SubMenu>
-          <ServiceCard label="Pet Parents Nearby" icon={<Users />} onClick={() => navigate("/services?type=nearby")} />
-          <ServiceCard label="Events" icon={<CalendarClock />} onClick={() => navigate("/services?type=events")} />
-          <ServiceCard label="Social Media" icon={<Share2 />} onClick={() => navigate("/services?type=social")} />
+          <ServiceCard label="Pet Parents Nearby" icon={<Users />} onClick={() => navigate("/pet-parents-nearby")} />
+          <ServiceCard label="Events" icon={<CalendarClock />} onClick={() => navigate("/events")} />
+          <ServiceCard label="Social Media" icon={<Share2 />} onClick={() => navigate("/social-media")} />
         </SubMenu>
       )}
 
       {/* Bottom Nav */}
       <div className="fixed bottom-0 left-0 right-0 flex justify-around items-center py-5 sm:py-4 lg:py-3 bg-white shadow-inner border-t border-gray-200 text-xs font-semibold z-50">
         <BottomNavItem label="My Pets" icon={<PawPrint />} onClick={() => navigate("/add-pet")} />
-        <BottomNavItem label="Shop" icon={<ShoppingBag />} onClick={() => navigate("/services?type=shop")} />
+        <BottomNavItem label="Shop" icon={<ShoppingBag />} onClick={() => navigate("/shop")} />
         <BottomNavItem label="Pet Care" icon={<Dog />} onClick={() => {
           setShowCare(!showCare);
           setShowServices(false);
