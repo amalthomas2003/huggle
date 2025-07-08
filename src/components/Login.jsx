@@ -76,35 +76,49 @@ function Login({ setUser }) {
   };
 
   const handleRoleLogic = async (user) => {
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
 
-    if (userSnap.exists()) {
-      const userData = userSnap.data();
+  if (userSnap.exists()) {
+    const userData = userSnap.data();
 
-      if (!userData.roles.includes(selectedRole)) {
-        await updateDoc(userRef, {
-          roles: arrayUnion(selectedRole),
-          lastUsedRole: selectedRole,
-        });
-      } else {
-        await updateDoc(userRef, {
-          lastUsedRole: selectedRole,
-        });
-      }
+    // 🔥 New: Fetch subscription status and store it (optional)
+    const subscriptionStatus = userData.subscription?.plan ?? "free";
+    // You can pass this up via props or context
+    // Example: setUserSubscriptionStatus(subscriptionStatus); (you’ll need to define this)
+
+    if (!userData.roles.includes(selectedRole)) {
+      await updateDoc(userRef, {
+        roles: arrayUnion(selectedRole),
+        lastUsedRole: selectedRole,
+      });
     } else {
-      await setDoc(userRef, {
-        uid: user.uid,
-        name: user.displayName,
-        email: user.email,
-        roles: [selectedRole],
+      await updateDoc(userRef, {
         lastUsedRole: selectedRole,
       });
     }
+  } else {
+    await setDoc(userRef, {
+      uid: user.uid,
+      name: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL,
+      roles: [selectedRole],
+      lastUsedRole: selectedRole,
+      subscription: {
+        active: false,
+        plan: null,
+        startDate: null,
+        expiryDate: null,
+      },
+      createdAt: new Date().toISOString(),
+    });
+  }
 
-    setUser(user);
-    setTimeout(() => redirectToDashboard(selectedRole), 1200);
-  };
+  setUser(user); // sets the Firebase user
+  setTimeout(() => redirectToDashboard(selectedRole), 1200);
+};
+
 
   const redirectToDashboard = (role) => {
     switch (role) {

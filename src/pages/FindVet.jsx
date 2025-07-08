@@ -152,36 +152,76 @@ if (lastCalled && now - parseInt(lastCalled) < oneMinute) {
   };
   const getOpeningStatus = (vet) => {
   const hours = vet.regularOpeningHours?.weekdayDescriptions;
-  if (!hours || hours.length !== 7) return "Hours: N/A";
+  const now = new Date();
+  const currentHour = now.getHours();
+  const todayIndex = now.getDay(); // Sunday = 0
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-  const today = new Date().getDay(); // Sunday = 0, Saturday = 6
-  const descriptions = [...hours];
-  descriptions.push(descriptions.shift()); // Move Sunday to end for Mon-Sun order
-
-  const todayHours = descriptions[today - 1];
-
-  if (!todayHours || todayHours.toLowerCase().includes("closed")) {
-    for (let i = 1; i <= 7; i++) {
-      const index = (today + i) % 7;
-      const desc = descriptions[index];
-      if (desc && !desc.toLowerCase().includes("closed")) {
-        const dayName = desc.split(":")[0];
-        const openTime = desc.split(":")[1]?.trim() || "";
-        return `Closed today • Opens ${dayName} at ${openTime}`;
-      }
+  // Fallback if hours are missing
+  if (!hours || hours.length !== 7) {
+    if (currentHour >= 9 && currentHour < 17) {
+      return "9:00 AM – 5:00 PM (assumed)";
+    } else {
+      return "Closed now • Opens tomorrow at 9:00 AM (assumed)";
     }
-    return "Closed all week";
   }
 
-  return todayHours;
+  // Reorder Sunday to end (Google API starts with Monday)
+  const descriptions = [...hours];
+  descriptions.push(descriptions.shift());
+
+  // Get today's hours
+  const todayDesc = descriptions[todayIndex === 0 ? 6 : todayIndex - 1];
+  const isTodayOpen = todayDesc && !todayDesc.toLowerCase().includes("closed");
+
+  if (isTodayOpen) {
+    const timeStr = todayDesc.split(":").slice(1).join(":").trim(); // Keep full time string after the day
+    if (currentHour >= 9 && currentHour < 17) {
+      return `Today: ${timeStr}`;
+    } else {
+      return `Opens Today at ${timeStr}`;
+    }
+  }
+
+  // If today is closed, find next open day
+  for (let i = 1; i <= 7; i++) {
+    const nextIndex = (todayIndex + i) % 7;
+    const desc = descriptions[nextIndex === 0 ? 6 : nextIndex - 1];
+    if (desc && !desc.toLowerCase().includes("closed")) {
+      const timeStr = desc.split(":").slice(1).join(":").trim();
+      const dayName = dayNames[nextIndex];
+      return `Closed today • Opens ${dayName} at ${timeStr}`;
+    }
+  }
+
+  return "Closed all week";
 };
 
-  const getTodayHours = (hours) => {
-    const today = new Date().getDay();
-    return hours?.periods?.[today]?.openTime?.text || "N/A";
-  };
 
-  const isOpenNow = (hours) => hours?.openNow;
+
+ const getTodayHours = (hours) => {
+  if (hours?.periods) {
+    const today = new Date().getDay();
+    return hours.periods?.[today]?.openTime?.text || "N/A";
+  }
+
+  const now = new Date();
+  const hour = now.getHours();
+  if (hour >= 9 && hour < 17) return "Open 9:00 AM – 5:00 PM (assumed)";
+  return "Closed (assumed)";
+};
+
+
+  const isOpenNow = (hours) => {
+  if (hours?.openNow !== undefined) return hours.openNow;
+
+  // If openNow is undefined or hours is N/A, fallback to time check
+  const now = new Date();
+  const currentHour = now.getHours();
+
+  return currentHour >= 9 && currentHour < 17; // 9 AM to 5 PM
+};
+
 
   const sortedVets = vets.sort((a, b) => {
     if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);

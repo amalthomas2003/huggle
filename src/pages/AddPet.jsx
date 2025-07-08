@@ -41,6 +41,8 @@ import petAnimation from "../assets/lottie/pet-id-card.json";
 import { useNavigate } from "react-router-dom";
 import imageCompression from 'browser-image-compression';
 import loadingLottie from "../assets/lottie/loadingcat.json";
+import { useSubscription } from "../context/SubscriptionContext";
+import subscriptionPetLimits from "../config/SubscriptionLimits";
 
 
 const defaultImages = {
@@ -93,6 +95,9 @@ const meds = {
 };
 
 export default function AddPet() {
+  const { subscriptionPlan } = useSubscription();
+  const currentLimit = subscriptionPetLimits[subscriptionPlan] || subscriptionPetLimits.free;
+
   const formRef = useRef(null);
 
   const [user] = useAuthState(auth);
@@ -118,6 +123,20 @@ export default function AddPet() {
     vaccines: [],
     meds: []
   });
+  const [petCount, setPetCount] = useState(0);
+
+useEffect(() => {
+  const fetchPetCount = async () => {
+    const petsSnapshot = await getDocs(
+      collection(db, "users", user.uid, "pets")
+    );
+    setPetCount(petsSnapshot.size);
+  };
+
+  if (user?.uid) {
+    fetchPetCount();
+  }
+}, [user]);
 
   const fetchPets = async () => {
   if (!user) return;
@@ -206,6 +225,12 @@ export default function AddPet() {
   const handleSubmit = async e => {
   e.preventDefault();
   setLoading(true);
+  if (!editingId && petCount >= currentLimit) {
+  navigate("/plans");
+  setLoading(false);
+  return;
+}
+
   let imageUrl = defaultImages[petData.type];
 let oldImageUrl = null;
 
