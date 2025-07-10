@@ -184,7 +184,7 @@ if (lastCalled && now - parseInt(lastCalled) < oneMinute) {
     if (currentHour >= 9 && currentHour < 17) {
       return `Today: ${timeStr}`;
     } else {
-      return `Opens Today at ${timeStr}`;
+      return `Working Hours : ${timeStr}`;
     }
   }
 

@@ -162,7 +162,7 @@ if (lastCalled && now - parseInt(lastCalled) < oneMinute) {
     if (currentHour >= 9 && currentHour < 17) {
       return "9:00 AM – 5:00 PM (assumed)";
     } else {
-      return "Closed now • Opens tomorrow at 9:00 AM (assumed)";
+      return "Closed now • Opens tomorrow at 9:00 AM (estimated)";
     }
   }
 
@@ -179,7 +179,7 @@ if (lastCalled && now - parseInt(lastCalled) < oneMinute) {
     if (currentHour >= 9 && currentHour < 17) {
       return `Today: ${timeStr}`;
     } else {
-      return `Opens Today at ${timeStr}`;
+      return `Working Hours : ${timeStr}`;
     }
   }
 

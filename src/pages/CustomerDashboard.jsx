@@ -15,6 +15,9 @@ import {
   Menu,
   CalendarClock,
   Share2,
+  Info,
+  Repeat,
+  Pin
 } from "lucide-react";
 
 import "slick-carousel/slick/slick.css";
@@ -23,12 +26,17 @@ import Slider from "react-slick";
 import { useState, useEffect } from "react";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { format, addWeeks, addYears, isAfter, compareAsc } from "date-fns";
+import { format, addWeeks, addYears, isAfter, compareAsc, parseISO } from "date-fns";
 import vaccineBg from "../assets/vaccine-bg.png";
-import {Info, Repeat, Pin } from "lucide-react";
+
+// Import your useSubscription hook
+import { useSubscription } from "../context/SubscriptionContext"; 
 
 function CustomerDashboard({ user, setUser }) {
   const navigate = useNavigate();
+  // Fetch subscription data
+  const { subscription, loadingSubscription } = useSubscription();
+
   const [showServices, setShowServices] = useState(false);
   const [showCare, setShowCare] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,20 +73,21 @@ function CustomerDashboard({ user, setUser }) {
     autoplaySpeed: 4000,
     arrows: false,
   };
+
   const getPriorityColor = (priority) => {
-  switch (priority?.toLowerCase()) {
-    case "core":
-      return "bg-red-600/70 text-white";
-    case "important":
-      return "bg-yellow-500/70 text-black";
-    case "seasonal":
-      return "bg-blue-500/70 text-white";
-    case "rare":
-      return "bg-gray-500/70 text-white";
-    default:
-      return "bg-white/30 text-white";
-  }
-};
+    switch (priority?.toLowerCase()) {
+      case "core":
+        return "bg-red-600/70 text-white";
+      case "important":
+        return "bg-yellow-500/70 text-black";
+      case "seasonal":
+        return "bg-blue-500/70 text-white";
+      case "rare":
+        return "bg-gray-500/70 text-white";
+      default:
+        return "bg-white/30 text-white";
+    }
+  };
 
   const vaccineCatalog = {
     Dog: [
@@ -190,11 +199,39 @@ function CustomerDashboard({ user, setUser }) {
     fetchAllPetSchedules();
   }, []);
 
+  // --- DERIVE PLAN STATUS ---
+  // Ensure that `displayPlanStatus` accurately reflects the current plan,
+  // taking into account expiry as determined by the SubscriptionContext.
+  const currentPlan = subscription?.plan;
+  // `isSubscriptionActive` from context already reflects if it's currently active (not expired)
+  const displayPlanStatus = currentPlan || "free"; // No need for explicit isAfter check here if context handles "expired" string
+  // --- END DERIVE PLAN STATUS ---
+
+  // --- Determine 'huggle' text color based on plan status ---
+  const getHuggleTextColor = () => {
+    if (loadingSubscription) {
+      return "text-gray-500"; // Or any loading color
+    }
+    switch (displayPlanStatus) {
+      case "pro":
+        return "text-indigo-600"; // Example color for Pro
+      case "pro_plus":
+        return "text-teal-600"; // Example color for Pro Plus
+      case "expired":
+        return "text-gray-500"; // Greyed out for expired
+      case "free":
+      default:
+        return "text-orange-800"; // Default for Free or other states
+    }
+  };
+  // --- END HUGGLE TEXT COLOR ---
+
+
   return (
     <div className="min-h-screen flex flex-col bg-[#fff3e0] pb-20">
-      {/* Header */}
-      <div className="bg-white shadow-md text-center py-4 text-2xl font-extrabold tracking-wide text-orange-800">
-        huggle 🐾
+      {/* Header - APPLYING DYNAMIC COLOR HERE */}
+      <div className="bg-white shadow-md text-center py-4 text-2xl font-extrabold tracking-wide">
+        <span className={getHuggleTextColor()}>huggle 🐾</span>
       </div>
 
       {/* Top Greeting & Menu */}
@@ -209,18 +246,14 @@ function CustomerDashboard({ user, setUser }) {
 
         {menuOpen && (
           <div className="absolute top-16 right-4 bg-white border border-orange-300 rounded-lg shadow-xl z-50 w-40">
-            <button
-              onClick={() => navigate("/plans")}
-              className="bg-yellow-400 text-white font-semibold px-4 py-2 rounded hover:bg-yellow-500 transition"
-            >
-              View Plans
-            </button>
+            <button onClick={() => navigate("/plans")} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Subscription</button>
             <button onClick={() => navigate("/contact")} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Contact Us</button>
             <button onClick={handleLogout} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Log Out</button>
-
           </div>
         )}
       </div>
+
+      {/* NO SUBSCRIPTION STATUS BANNER HERE */}
 
       {/* Advertisement Carousel */}
       <div className="px-4 py-2">
@@ -255,47 +288,47 @@ function CustomerDashboard({ user, setUser }) {
           className="rounded-2xl overflow-hidden shadow-2xl relative h-auto"
         >
           <div
-  className="h-full w-full flex flex-col px-4 py-6"
-  style={{
-    backgroundImage: `url(${vaccineBg})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-    color: "black",
-  }}
->
-  <div
-    className="w-[60%] sm:w-[55%] md:w-[50%] lg:w-[40%] bg-orange-400/40 backdrop-blur-md rounded-xl p-4 text-white shadow-lg"
-    style={{ marginLeft: 0 }}
-  >
-    <span
-  className={`px-3 py-1 rounded-full text-sm font-semibold font-cartoon ${getPriorityColor(item.priority)}`}
->
-  {item.priority || "--"}
-</span>
+            className="h-full w-full flex flex-col px-4 py-6"
+            style={{
+              backgroundImage: `url(${vaccineBg})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+              color: "black",
+            }}
+          >
+            <div
+              className="w-[60%] sm:w-[55%] md:w-[50%] lg:w-[40%] bg-orange-400/40 backdrop-blur-md rounded-xl p-4 text-white shadow-lg"
+              style={{ marginLeft: 0 }}
+            >
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-semibold font-cartoon ${getPriorityColor(item.priority)}`}
+              >
+                {item.priority || "--"}
+              </span>
 
 
-    <h3 className="text-2xl font-cartoon font-bold mt-2">
-      {item.name}
-    </h3>
+              <h3 className="text-2xl font-cartoon font-bold mt-2">
+                {item.name}
+              </h3>
 
-    <p className="text-sm flex items-center gap-1 mt-1 font-cartoon">
-      <CalendarDays size={16} />
-      {format(new Date(item.date), "dd MMM yyyy")}
-    </p>
+              <p className="text-sm flex items-center gap-1 mt-1 font-cartoon">
+                <CalendarDays size={16} />
+                {format(new Date(item.date), "dd MMM yyyy")}
+              </p>
 
-    <p className="text-xs italic mt-1 flex items-center gap-1 font-cartoon">
-  For{" "}
-  <span className="ml-1 font-extrabold text-sm text-orange-100 tracking-wide drop-shadow-[1px_1px_1px_rgba(0,0,0,0.3)]">
-    {item.petName}
-  </span>
-</p>
-    <p className="text-xs italic mt-3 flex items-center gap-1 font-cartoon">
-      <Info size={14} />
-      Consult vet before vaccine
-    </p>
-  </div>
-</div>
+              <p className="text-xs italic mt-1 flex items-center gap-1 font-cartoon">
+                For{" "}
+                <span className="ml-1 font-extrabold text-sm text-orange-100 tracking-wide drop-shadow-[1px_1px_1px_rgba(0,0,0,0.3)]">
+                  {item.petName}
+                </span>
+              </p>
+              <p className="text-xs italic mt-3 flex items-center gap-1 font-cartoon">
+                <Info size={14} />
+                Consult vet before vaccine
+              </p>
+            </div>
+          </div>
 
         </div>
       ))}
@@ -321,8 +354,33 @@ function CustomerDashboard({ user, setUser }) {
 
       {showSocial && (
         <SubMenu>
-          <ServiceCard label="Pet Parents Nearby" icon={<Users />} onClick={() => navigate("/pet-parents-nearby")} />
-          <ServiceCard label="Events" icon={<CalendarClock />} onClick={() => navigate("/events")} />
+          {/* Conditional rendering for premium features */}
+          <ServiceCard 
+            label="Pet Parents Nearby" 
+            icon={<Users />} 
+            onClick={() => {
+              // Ensure displayPlanStatus is correctly derived from SubscriptionContext
+              if (displayPlanStatus === "pro" || displayPlanStatus === "pro_plus") {
+                navigate("/pet-parents-nearby");
+              } else {
+                alert("This feature requires a premium plan. Please upgrade!");
+                navigate("/plans");
+              }
+            }} 
+          />
+          <ServiceCard 
+            label="Events" 
+            icon={<CalendarClock />} 
+            onClick={() => {
+              // Ensure displayPlanStatus is correctly derived from SubscriptionContext
+              if (displayPlanStatus === "pro" || displayPlanStatus === "pro_plus") {
+                navigate("/events");
+              } else {
+                alert("This feature requires a premium plan. Please upgrade!");
+                navigate("/plans");
+              }
+            }} 
+          />
           <ServiceCard label="Social Media" icon={<Share2 />} onClick={() => navigate("/social-media")} />
         </SubMenu>
       )}

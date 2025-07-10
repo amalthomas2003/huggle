@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 
+import PaymentPage from "./pages/PaymentPage";
 import Login from "./components/Login";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import AddPet from "./pages/AddPet";
@@ -89,6 +90,7 @@ function App() {
           <Route path="/events" element={user ? <Events user={user} /> : <Navigate to="/login" />} />
           <Route path="/shop" element={user ? <Shop user={user} /> : <Navigate to="/login" />} />
           <Route path="/plans" element={user ? <PlanComparison user={user} /> : <Navigate to="/login" />} />
+          <Route path="/payment" element={user ? <PaymentPage user={user} /> : <Navigate to="/login" />} />
           {/* Other Roles */}
           <Route path="/groomer-dashboard" element={<GroomerDashboard />} />
           <Route path="/vet-dashboard" element={<VetDashboard />} />
