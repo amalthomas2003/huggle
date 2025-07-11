@@ -29,6 +29,9 @@ import TrainerDashboard from "./pages/TrainerDashboard";
 import CareCentreDashboard from "./pages/CareCentreDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EventHostDashboard from "./pages/EventHostDashboard";
+import ContactUs from "./pages/ContactUs";
+import Settings from "./pages/Settings";
+import Profile from "./pages/CustromerProfile";
 
 import Lottie from "lottie-react";
 import loadingAnimation from "./assets/lottie/loading-paws.json";
@@ -91,6 +94,9 @@ function App() {
           <Route path="/shop" element={user ? <Shop user={user} /> : <Navigate to="/login" />} />
           <Route path="/plans" element={user ? <PlanComparison user={user} /> : <Navigate to="/login" />} />
           <Route path="/payment" element={user ? <PaymentPage user={user} /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/login" />} />
+          <Route path="/settings" element={user ? <Settings user={user} /> : <Navigate to="/login" />} />  
+          <Route path="/contact" element={user ? <ContactUs user={user} /> : <Navigate to="/login" />} />
           {/* Other Roles */}
           <Route path="/groomer-dashboard" element={<GroomerDashboard />} />
           <Route path="/vet-dashboard" element={<VetDashboard />} />

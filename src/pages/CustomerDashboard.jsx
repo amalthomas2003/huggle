@@ -246,8 +246,13 @@ function CustomerDashboard({ user, setUser }) {
 
         {menuOpen && (
           <div className="absolute top-16 right-4 bg-white border border-orange-300 rounded-lg shadow-xl z-50 w-40">
+            <button onClick={() => navigate("/profile")} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Profile</button>
+
             <button onClick={() => navigate("/plans")} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Subscription</button>
+            <button onClick={() => navigate("/settings")} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Settings</button>
+
             <button onClick={() => navigate("/contact")} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Contact Us</button>
+
             <button onClick={handleLogout} className="w-full px-4 py-2 text-left hover:bg-orange-100 text-sm">Log Out</button>
           </div>
         )}
